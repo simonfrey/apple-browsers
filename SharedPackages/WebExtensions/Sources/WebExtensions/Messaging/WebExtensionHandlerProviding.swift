@@ -1,7 +1,7 @@
 //
-//  WebExtensionLoadResult.swift
+//  WebExtensionHandlerProviding.swift
 //
-//  Copyright © 2024 DuckDuckGo. All rights reserved.
+//  Copyright © 2025 DuckDuckGo. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -17,18 +17,15 @@
 //
 
 import Foundation
+import WebKit
 
+/// Protocol for providing extension-specific message handlers.
+/// Platform-specific implementations determine which handlers to create for each extension.
 @available(macOS 15.4, iOS 18.4, *)
-public struct WebExtensionLoadResult {
-    public let identifier: String
-    public let filename: String
-    public let displayName: String?
-    public let version: String?
+public protocol WebExtensionHandlerProviding {
 
-    public init(identifier: String, filename: String, displayName: String?, version: String?) {
-        self.identifier = identifier
-        self.filename = filename
-        self.displayName = displayName
-        self.version = version
-    }
+    /// Create handlers for a specific extension
+    /// - Parameter context: The extension context
+    /// - Returns: Array of handlers to register for this extension
+    func makeHandlers(for context: WKWebExtensionContext) -> [WebExtensionMessageHandler]
 }

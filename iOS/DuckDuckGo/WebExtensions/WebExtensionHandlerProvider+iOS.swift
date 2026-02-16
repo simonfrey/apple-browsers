@@ -1,7 +1,8 @@
 //
-//  WebExtensionLoadResult.swift
+//  WebExtensionHandlerProvider+iOS.swift
+//  DuckDuckGo
 //
-//  Copyright © 2024 DuckDuckGo. All rights reserved.
+//  Copyright © 2025 DuckDuckGo. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -16,19 +17,21 @@
 //  limitations under the License.
 //
 
-import Foundation
+import UIKit
+import WebExtensions
+import WebKit
 
-@available(macOS 15.4, iOS 18.4, *)
-public struct WebExtensionLoadResult {
-    public let identifier: String
-    public let filename: String
-    public let displayName: String?
-    public let version: String?
+@available(iOS 18.4, *)
+final class WebExtensionHandlerProvider: WebExtensionHandlerProviding {
 
-    public init(identifier: String, filename: String, displayName: String?, version: String?) {
-        self.identifier = identifier
-        self.filename = filename
-        self.displayName = displayName
-        self.version = version
+    init() {}
+
+    func makeHandlers(for context: WKWebExtensionContext) -> [WebExtensionMessageHandler] {
+        switch context.duckDuckGoExtensionType {
+        case .ddgInternalExtension:
+            return [ExampleMessageHandler()]
+        default:
+            return [ExampleMessageHandler()]
+        }
     }
 }
