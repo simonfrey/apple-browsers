@@ -1,5 +1,5 @@
 //
-//  RebrandedContextualOnboardingDialogs+SearchCompleted.swift
+//  RebrandedContextualOnboardingDialogs+Trackers.swift
 //  DuckDuckGo
 //
 //  Copyright © 2026 DuckDuckGo. All rights reserved.
@@ -21,49 +21,44 @@ import SwiftUI
 import Onboarding
 import MetricBuilder
 
-// MARK: - Anonymous Search Completed
+// MARK: - Trackers Blocked
 
 extension OnboardingRebranding {
 
-    struct OnboardingSearchDoneDialog: View {
+    struct OnboardingTrackersBlockedDialog: View {
         @Environment(\.verticalSizeClass) private var vSizeClass
         @Environment(\.horizontalSizeClass) private var hSizeClass
         @Environment(\.onboardingTheme) private var theme
 
-        var title = "That’s DuckDuckGo Search!"
-        var message = "Private. Fast. Fewer ads."
-        var cta = UserText.Onboarding.ContextualOnboarding.onboardingGotItButton
-
         @State private var showNextScreen: Bool = false
 
         let shouldFollowUp: Bool
-        let viewModel: OnboardingSiteSuggestionsViewModel
-        let gotItAction: () -> Void
+        let message: AttributedString
+        var cta = UserText.Onboarding.ContextualOnboarding.onboardingGotItButton
+        let blockedTrackersCTAAction: () -> Void
         let onManualDismiss: (_ isShowingNextScreen: Bool) -> Void
 
         var body: some View {
             OnboardingBubbleView.withDismissButton(tailPosition: nil, onDismiss: { onManualDismiss(showNextScreen) }) {
                 if showNextScreen {
-                    searchDoneFollowUpContent
+                    OnboardingRebranding.OnboardingFireDialogContent()
                 } else {
-                    searchDoneContent
+                    trackersBlockedContent
                 }
             }
             .padding(theme.contextualOnboardingMetrics.containerPadding)
             .applyMaxDialogWidth(iPhoneLandscape: theme.contextualOnboardingMetrics.maxContainerWidth, iPad: theme.contextualOnboardingMetrics.maxContainerWidth)
         }
 
-
-        private var searchDoneContent: some View {
+        private var trackersBlockedContent: some View {
             OnboardingRebranding.ContextualDaxDialogContent(
                 orientation: OnboardingRebranding.ContextualDynamicMetrics.dialogOrientation(horizontalAlignment: .center).build(v: vSizeClass, h: hSizeClass),
-                title: title,
                 message: message
             ) {
                 Button {
-                    gotItAction()
-                    withAnimation {
-                        if shouldFollowUp {
+                    blockedTrackersCTAAction()
+                    if shouldFollowUp {
+                        withAnimation {
                             showNextScreen = true
                         }
                     }
@@ -75,18 +70,14 @@ extension OnboardingRebranding {
             }
         }
 
-        private var searchDoneFollowUpContent: some View {
-            OnboardingRebranding.OnboardingTrySiteDialogContent(message: message, viewModel: viewModel)
-        }
-
     }
 
 }
 
-private extension OnboardingRebranding.OnboardingSearchDoneDialog {
+private extension OnboardingRebranding.OnboardingTrackersBlockedDialog {
 
     enum Metrics {
-        static let buttonMaxWidth = MetricBuilder<CGFloat?>(default: nil).iPhone(landscape: 174.0).iPad(174.0)
+        static let buttonMaxWidth = MetricBuilder<CGFloat?>(default: nil).iPhone(landscape: 156.0).iPad(156.0)
     }
 
 }

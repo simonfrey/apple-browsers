@@ -1,5 +1,5 @@
 //
-//  RebrandedContextualOnboardingDialogs+TrySearch.swift
+//  RebrandedContextualOnboardingDialogs+EndOfJourney.swift
 //  DuckDuckGo
 //
 //  Copyright © 2026 DuckDuckGo. All rights reserved.
@@ -21,29 +21,34 @@ import SwiftUI
 import Onboarding
 import MetricBuilder
 
-// MARK: - Try Anonymous Search
+// MARK: - End Of Journey Dialog
 
 extension OnboardingRebranding {
 
-    struct OnboardingTrySearchDialog: View {
+    struct OnboardingEndOfJourneyDialog: View {
         @Environment(\.verticalSizeClass) private var vSizeClass
         @Environment(\.horizontalSizeClass) private var hSizeClass
         @Environment(\.onboardingTheme) private var theme
 
-        var title = UserText.Onboarding.ContextualOnboarding.onboardingTryASearchTitle
-        var message = UserText.Onboarding.ContextualOnboarding.onboardingTryASearchMessage
-        let viewModel: OnboardingSearchSuggestionsViewModel
+        var title = UserText.Onboarding.ContextualOnboarding.onboardingFinalScreenTitle
+        let message: String
+        let cta: String
+        let dismissAction: () -> Void
         let onManualDismiss: () -> Void
 
         var body: some View {
             ScrollView(.vertical, showsIndicators: false) {
                 OnboardingBubbleView.withDismissButton(tailPosition: nil, onDismiss: onManualDismiss) {
                     OnboardingRebranding.ContextualDaxDialogContent(
-                        orientation: OnboardingRebranding.ContextualDynamicMetrics.dialogOrientation().build(v: vSizeClass, h: hSizeClass),
+                        orientation: OnboardingRebranding.ContextualDynamicMetrics.dialogOrientation(horizontalAlignment: .center).build(v: vSizeClass, h: hSizeClass),
                         title: title,
                         message: message
                     ) {
-                        OnboardingRebranding.ContextualOnboardingListView(list: viewModel.itemsList, action: viewModel.listItemPressed)
+                        Button(action: dismissAction) {
+                            Text(cta)
+                        }
+                        .frame(maxWidth: Metrics.buttonMaxWidth.build(v: vSizeClass, h: hSizeClass))
+                        .buttonStyle(theme.primaryButtonStyle.style)
                     }
                 }
                 .padding(theme.contextualOnboardingMetrics.containerPadding)
@@ -54,33 +59,10 @@ extension OnboardingRebranding {
 
 }
 
+private extension OnboardingRebranding.OnboardingEndOfJourneyDialog {
 
-// MARK: - Previews
-
-#Preview("Onboarding TrySearchDialog - Light") {
-    ZStack {
-        Color.white.ignoresSafeArea()
-
-        OnboardingRebranding.OnboardingTrySearchDialog(
-            viewModel: .init(suggestedSearchesProvider: OnboardingSuggestedSearchesProvider()),
-            onManualDismiss: {}
-        )
-        .padding()
-        .applyOnboardingTheme(.rebranding2026, stepProgressTheme: .rebranding2026)
+    enum Metrics {
+        static let buttonMaxWidth = MetricBuilder<CGFloat?>(default: nil).iPhone(landscape: 170.0).iPad(170.0)
     }
-    .preferredColorScheme(.light)
-}
 
-#Preview("Onboarding TrySearchDialog - Dark") {
-    ZStack {
-        Color(red: 43/255, green: 85/255, blue: 202/255).ignoresSafeArea()
-
-        OnboardingRebranding.OnboardingTrySearchDialog(
-            viewModel: .init(suggestedSearchesProvider: OnboardingSuggestedSearchesProvider()),
-            onManualDismiss: {}
-        )
-        .padding()
-        .applyOnboardingTheme(.rebranding2026, stepProgressTheme: .rebranding2026)
-    }
-    .preferredColorScheme(.dark)
 }
