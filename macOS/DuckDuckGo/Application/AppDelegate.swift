@@ -964,6 +964,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         windowControllersManager.showTab(with: .subscription(url))
                     }
                 }
+            }, navigateToSoftwareUpdateHandler: {
+                NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Software-Update-Settings.extension")!)
             })
         } else {
             // As long as remoteMessagingClient is private to App Delegate and activeRemoteMessageModel
@@ -975,7 +977,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 remoteMessagingAvailabilityProvider: nil,
                 openURLHandler: { _ in },
                 navigateToFeedbackHandler: { },
-                navigateToPIRHandler: { }
+                navigateToPIRHandler: { },
+                navigateToSoftwareUpdateHandler: { }
             )
         }
 
