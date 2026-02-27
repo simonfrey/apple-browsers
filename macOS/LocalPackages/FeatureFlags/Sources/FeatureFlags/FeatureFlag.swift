@@ -208,10 +208,6 @@ public enum FeatureFlag: String, CaseIterable {
     /// https://app.asana.com/1/137249556945/project/1211834678943996/task/1212017701300913?focus=true
     case allowPopupsForCurrentPage
 
-    /// Show popup permission button in inactive state when temporary allowance is active
-    /// https://app.asana.com/1/137249556945/project/1211834678943996/task/1212017701300919?focus=true
-    case popupPermissionButtonPersistence
-
     /// Web Notifications API polyfill - allows websites to show notifications via native macOS Notification Center
     /// https://app.asana.com/1/137249556945/project/414235014887631/task/1211395954816928?focus=true
     case webNotifications
@@ -314,7 +310,6 @@ extension FeatureFlag: FeatureFlagDescribing {
                 .allowPopupsForCurrentPage,
                 .extendedUserInitiatedPopupTimeout,
                 .suppressEmptyPopUpsOnApproval,
-                .popupPermissionButtonPersistence,
                 .dataImportWideEventMeasurement,
                 .firstTimeQuitSurvey,
                 .aiChatOmnibarOnboarding,
@@ -401,7 +396,6 @@ extension FeatureFlag: FeatureFlagDescribing {
                 .extendedUserInitiatedPopupTimeout,
                 .suppressEmptyPopUpsOnApproval,
                 .allowPopupsForCurrentPage,
-                .popupPermissionButtonPersistence,
                 .webNotifications,
                 .newPermissionView,
                 .firstTimeQuitSurvey,
@@ -556,8 +550,6 @@ extension FeatureFlag: FeatureFlagDescribing {
             return .remoteReleasable(.subfeature(PopupBlockingSubfeature.suppressEmptyPopUpsOnApproval))
         case .allowPopupsForCurrentPage:
             return .remoteReleasable(.subfeature(PopupBlockingSubfeature.allowPopupsForCurrentPage))
-        case .popupPermissionButtonPersistence:
-            return .remoteReleasable(.subfeature(PopupBlockingSubfeature.popupPermissionButtonPersistence))
         case .webNotifications:
             return .remoteReleasable(.subfeature(MacOSBrowserConfigSubfeature.webNotifications))
         case .newPermissionView:
