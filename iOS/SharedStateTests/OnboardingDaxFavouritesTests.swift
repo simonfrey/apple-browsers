@@ -122,7 +122,8 @@ import AIChatTestingUtilities
                                     productSurfaceTelemetry: MockProductSurfaceTelemetry(),
                                     privacyStats: MockPrivacyStats(),
                                     voiceSearchHelper: MockVoiceSearchHelper(),
-                                    launchSourceManager: MockLaunchSourceManager()
+                                    launchSourceManager: MockLaunchSourceManager(),
+                                    darkReaderFeatureSettings: MockDarkReaderFeatureSettings()
         )
         let fireExecutor = FireExecutor(tabManager: tabManager,
                                         websiteDataManager: mockWebsiteDataManager,
@@ -240,16 +241,6 @@ import AIChatTestingUtilities
         XCTAssertTrue(contextualOnboardingLogicMock.didCallEnableAddFavoriteFlow)
     }
 
-}
-
-private struct MockDarkReaderFeatureSettings: DarkReaderFeatureSettings {
-    var isFeatureEnabled: Bool = false
-    var isForceDarkModeEnabled: Bool = false
-    var excludedDomains: [String] = []
-    var forceDarkModeChangedPublisher: AnyPublisher<Bool, Never> = Empty().eraseToAnyPublisher()
-    var excludedDomainsChangedPublisher: AnyPublisher<Void, Never> = Empty().eraseToAnyPublisher()
-    func setForceDarkModeEnabled(_ enabled: Bool) {}
-    func themeDidChange() {}
 }
 
 // swiftlint:enable force_try
