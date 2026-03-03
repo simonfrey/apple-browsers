@@ -612,3 +612,9 @@ public enum WebExtensionsSubfeature: String, PrivacySubfeature {
 
     case embeddedExtension
 }
+
+public enum ForceDarkModeOnWebsitesSubfeature: String, PrivacySubfeature {
+    public var parent: PrivacyFeature { .forceDarkModeOnWebsites }
+
+    case featureRollout
+}
