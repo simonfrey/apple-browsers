@@ -133,6 +133,7 @@ class MainViewController: UIViewController {
     private let statisticsStore: StatisticsStore
     let voiceSearchHelper: VoiceSearchHelperProtocol
     let featureFlagger: FeatureFlagger
+    let idleReturnEligibilityManager: IdleReturnEligibilityManaging
 
     @UserDefaultsWrapper(key: .syncDidShowSyncPausedByFeatureFlagAlert, defaultValue: false)
     private var syncDidShowSyncPausedByFeatureFlagAlert: Bool
@@ -312,6 +313,7 @@ class MainViewController: UIViewController {
         subscriptionFeatureAvailability: SubscriptionFeatureAvailability,
         voiceSearchHelper: VoiceSearchHelperProtocol,
         featureFlagger: FeatureFlagger,
+        idleReturnEligibilityManager: IdleReturnEligibilityManaging,
         contentScopeExperimentsManager: ContentScopeExperimentsManaging,
         fireproofing: Fireproofing,
         textZoomCoordinatorProvider: TextZoomCoordinatorProviding,
@@ -376,6 +378,7 @@ class MainViewController: UIViewController {
         self.subscriptionFeatureAvailability = subscriptionFeatureAvailability
         self.voiceSearchHelper = voiceSearchHelper
         self.featureFlagger = featureFlagger
+        self.idleReturnEligibilityManager = idleReturnEligibilityManager
         self.fireproofing = fireproofing
         self.textZoomCoordinatorProvider = textZoomCoordinatorProvider
         self.websiteDataManager = websiteDataManager
@@ -1237,7 +1240,7 @@ class MainViewController: UIViewController {
     }
 
     private func buildEscapeHatch(tabSwitchedFromIndex: Int? = nil) -> EscapeHatchModel? {
-        guard featureFlagger.isFeatureOn(.showNTPAfterIdleReturn) else {
+        guard idleReturnEligibilityManager.isEligibleForNTPAfterIdle() else {
             return nil
         }
         let tabs = tabManager.model.tabs
@@ -3450,7 +3453,7 @@ extension MainViewController: OmniBarDelegate {
     }
 
     func escapeHatchForEditingState() -> EscapeHatchModel? {
-        guard featureFlagger.isFeatureOn(.showNTPAfterIdleReturn),
+        guard idleReturnEligibilityManager.isEligibleForNTPAfterIdle(),
               tabManager.model.currentTab?.link == nil else {
             return nil
         }
@@ -3458,7 +3461,7 @@ extension MainViewController: OmniBarDelegate {
     }
 
     func useNewOmnibarTransitionBehaviour() -> Bool {
-        featureFlagger.isFeatureOn(.showNTPAfterIdleReturn)
+        idleReturnEligibilityManager.isEligibleForNTPAfterIdle()
     }
 
     func onSwitchTabToIndex(_ index: Int) {
