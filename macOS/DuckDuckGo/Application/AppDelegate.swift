@@ -361,6 +361,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let webExtensionManagerHolder = WebExtensionManagerHolder()
     private var webExtensionFeatureFlagHandler: AnyObject?
     private var isSyncingEmbeddedExtensions = false
+    private(set) var darkReaderFeatureSettings: DarkReaderFeatureSettings?
+    private var darkReaderCancellables = Set<AnyCancellable>()
 
     /// Holder class that allows `WebExtensionAvailability` to be created before `super.init()`,
     /// while still providing access to `webExtensionManager` which is set on `self` after `super.init()`.
@@ -1628,6 +1630,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupWebExtensions() {
         guard #available(macOS 15.4, *) else { return }
 
+        let darkReaderSettings = AppDarkReaderFeatureSettings(
+            featureFlagger: featureFlagger,
+            privacyConfigurationManager: privacyFeatures.contentBlocking.privacyConfigurationManager,
+            storage: keyValueStore.throwingKeyedStoring(),
+            currentThemeProvider: appearancePreferences,
+            pixelFiring: PixelKit.shared
+        )
+        self.darkReaderFeatureSettings = darkReaderSettings
+        appearancePreferences.darkReaderFeatureSettings = darkReaderSettings
+
+        darkReaderSettings.forceDarkModeChangedPublisher
+            .sink { [weak self] _ in
+                Task { @MainActor in
+                    await self?.syncEmbeddedExtensions()
+                }
+            }
+            .store(in: &darkReaderCancellables)
+
+        appearancePreferences.$themeAppearance
+            .dropFirst()
+            .sink { [weak self] _ in
+                self?.darkReaderFeatureSettings?.themeDidChange()
+            }
+            .store(in: &darkReaderCancellables)
+
         let flagPublisher = (featureFlagger.localOverrides?.actionHandler as? FeatureFlagOverridesPublishingHandler<FeatureFlag>)?
             .flagDidChangePublisher
 
@@ -1661,7 +1688,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // Tabs restored before the manager exists won't have webExtensionController attached.
             let webExtensionManager = WebExtensionManagerFactory.makeManager(
                 privacyConfigurationManager: privacyFeatures.contentBlocking.privacyConfigurationManager,
-                autoconsentPreferences: cookiePopupProtectionPreferences
+                autoconsentPreferences: cookiePopupProtectionPreferences,
+                darkReaderExcludedDomainsProvider: darkReaderSettings
             )
             self.webExtensionManager = webExtensionManager
 
@@ -1687,7 +1715,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let webExtensionManager = WebExtensionManagerFactory.makeManager(
             privacyConfigurationManager: privacyFeatures.contentBlocking.privacyConfigurationManager,
-            autoconsentPreferences: cookiePopupProtectionPreferences
+            autoconsentPreferences: cookiePopupProtectionPreferences,
+            darkReaderExcludedDomainsProvider: darkReaderFeatureSettings
         )
         self.webExtensionManager = webExtensionManager
 
@@ -1707,6 +1736,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         var enabledTypes: Set<DuckDuckGoWebExtensionType> = []
         if featureFlagger.isFeatureOn(.embeddedExtension) {
             enabledTypes.insert(.embedded)
+        }
+        if darkReaderFeatureSettings?.isForceDarkModeEnabled == true {
+            enabledTypes.insert(.darkReader)
         }
         await webExtensionManager.syncEmbeddedExtensions(enabledTypes: enabledTypes)
     }
