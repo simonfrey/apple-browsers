@@ -384,6 +384,9 @@ public enum AIChatSubfeature: String, Equatable, PrivacySubfeature {
 
     case sidebarResizable
 
+    /// Enables recent AI chats on the New Tab Page omnibar
+    case ntpRecentChats
+
     /// Enables support for adding multiple page contexts to a single chat session
     case multiplePageContexts
 }
