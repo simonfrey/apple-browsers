@@ -1776,6 +1776,7 @@ class MainViewController: UIViewController {
 
     private func refreshOmniBar() {
         updateOmniBarLoadingState()
+        viewCoordinator.omniBar.refreshFireMode(fireMode: currentTab?.tabModel.fireTab ?? false)
 
         guard let tab = currentTab, tab.link != nil else {
             viewCoordinator.omniBar.stopBrowsing()
@@ -3542,6 +3543,10 @@ extension MainViewController: OmniBarDelegate {
         if let tab = tabManager.currentTabsModel.currentTab, tab.link == nil {
             ntpAfterIdleInstrumentation.toggleUsedFromNTP(afterIdle: tab.openedAfterIdle)
         }
+    }
+    
+    func isCurrentTabFireTab() -> Bool {
+        tabManager.currentTabsModel.currentTab?.fireTab ?? false
     }
 }
 

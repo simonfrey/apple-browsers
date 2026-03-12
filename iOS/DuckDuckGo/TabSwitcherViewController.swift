@@ -33,6 +33,7 @@ import BrowserServicesKit
 import PrivacyConfig
 import AIChat
 import UIComponents
+
 class TabSwitcherViewController: UIViewController {
 
     struct Constants {
@@ -136,7 +137,11 @@ class TabSwitcherViewController: UIViewController {
     private var trackerCountCancellable: AnyCancellable?
     private var trackerCountViewModel: TabSwitcherTrackerCountViewModel?
     private var lastAppliedTrackerCountState: TabSwitcherTrackerCountViewModel.State?
-    private var trackerInfoModel: InfoPanelView.Model?
+    private var _trackerInfoModel: InfoPanelView.Model?
+    private var activeTrackerInfoModel: InfoPanelView.Model? {
+        guard selectedBrowsingMode == .normal else { return nil }
+        return _trackerInfoModel
+    }
 
     private let initialTrackerCountState: TabSwitcherTrackerCountViewModel.State
     
@@ -145,8 +150,10 @@ class TabSwitcherViewController: UIViewController {
 
     private let productSurfaceTelemetry: ProductSurfaceTelemetry
 
-    private(set) var selectedBrowsingMode: BrowsingMode
     private var pickerViewModel: ImageSegmentedPickerViewModel
+    private let pickerItems: [ImageSegmentedPickerItem]
+    private let tabCountModel: TabCountModel
+    private(set) var selectedBrowsingMode: BrowsingMode
     private(set) var segmentedPickerHostingController: UIHostingController<TabSwitcherPickerWrapper>?
     private var pickerSelectionCancellable: AnyCancellable?
     private var fireModeCapability: FireModeCapable {
@@ -188,6 +195,9 @@ class TabSwitcherViewController: UIViewController {
         self.tabSwitcherSettings = tabSwitcherSettings
         self.daxDialogsManager = daxDialogsManager
         self.initialTrackerCountState = initialTrackerCountState
+        let tabCountModel = TabCountModel()
+        self.tabCountModel = tabCountModel
+        self.pickerItems = BrowsingMode.allCases.map { $0.segmentedPickerItem(tabCountModel: tabCountModel) }
         self.selectedBrowsingMode = tabManager.currentBrowsingMode
         self.pickerViewModel = ImageSegmentedPickerViewModel(
                 items: pickerItems,
@@ -209,9 +219,6 @@ class TabSwitcherViewController: UIViewController {
         titleBarView.scrollEdgeAppearance = appearance
     }
     
-    // Items for the segmented picker
-    private let pickerItems = BrowsingMode.allCases.map { $0.segmentedPickerItem }
-
     private func setupModeToggle() {
         guard fireModeCapability.isFireModeEnabled else {
             return
@@ -245,7 +252,10 @@ class TabSwitcherViewController: UIViewController {
         selectedBrowsingMode = newMode
         subscribeToTabChanges()
         currentSelection = tabsModel.currentIndex
-        collectionView.reloadData()
+        UIView.performWithoutAnimation {
+            collectionView.reloadData()
+            collectionView.layoutIfNeeded()
+        }
         updateUIForSelectionMode()
     }
 
@@ -426,6 +436,7 @@ class TabSwitcherViewController: UIViewController {
 
     private func subscribeToTabChanges() {
         tabObserverCancellable = tabsModel.tabsPublisher
+            .dropFirst()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.collectionView.reloadData()
@@ -451,13 +462,13 @@ class TabSwitcherViewController: UIViewController {
         lastAppliedTrackerCountState = state
 
         guard state.isVisible else {
-            trackerInfoModel = nil
+            _trackerInfoModel = nil
             updateTrackerInfoHeaderIfVisible()
             collectionView.collectionViewLayout.invalidateLayout()
             return
         }
 
-        trackerInfoModel = .trackerInfoPanel(
+        _trackerInfoModel = .trackerInfoPanel(
             state: state,
             onTap: { },
             onInfo: { [weak self] in
@@ -477,7 +488,7 @@ class TabSwitcherViewController: UIViewController {
             return
         }
 
-        header.configure(in: self, model: trackerInfoModel)
+        header.configure(in: self, model: activeTrackerInfoModel)
     }
 
     private func presentHideTrackerCountAlert() {
@@ -537,9 +548,9 @@ class TabSwitcherViewController: UIViewController {
     func refreshTitleViews() {
         let fireModeEnabled = fireModeCapability.isFireModeEnabled
         let tabsCountTitle = fireModeEnabled ? nil : UserText.numberOfTabs(tabsModel.count)
-        // TODO: - Update icon count
         let title = selectedTabs.isEmpty ? tabsCountTitle : UserText.numberOfSelectedTabs(withCount: selectedTabs.count)
         titleBarView.topItem?.title = title
+        tabCountModel.count = tabManager.normalTabsModel.count
     }
 
     func displayBookmarkAllStatusMessage(with results: BookmarkAllResult, openTabsCount: Int) {
@@ -740,7 +751,7 @@ extension TabSwitcherViewController: UICollectionViewDataSource {
             return UICollectionReusableView()
         }
 
-        header.configure(in: self, model: trackerInfoModel)
+        header.configure(in: self, model: activeTrackerInfoModel)
         return header
     }
 
@@ -845,7 +856,7 @@ extension TabSwitcherViewController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView,
                         layout collectionViewLayout: UICollectionViewLayout,
                         referenceSizeForHeaderInSection section: Int) -> CGSize {
-        guard trackerInfoModel != nil else { return .zero }
+        guard activeTrackerInfoModel != nil else { return .zero }
         return CGSize(width: collectionView.bounds.width, height: TabSwitcherTrackerInfoHeaderView.estimatedHeight)
     }
 
@@ -988,19 +999,22 @@ struct TabSwitcherPickerWrapper: View {
     }
 }
 
+// MARK: - Picker Items
+
 extension BrowsingMode {
-    var segmentedPickerItem: ImageSegmentedPickerItem {
+    func segmentedPickerItem(tabCountModel: TabCountModel) -> ImageSegmentedPickerItem {
         switch self {
         case .normal:
-            return ImageSegmentedPickerItem(
-                    text: "",
-                    selectedImage: Image(uiImage: DesignSystemImages.Glyphs.Size16.tabMobile),
-                    unselectedImage: Image(uiImage: DesignSystemImages.Glyphs.Size16.tabMobile))
+            let itemView = AnyView(TabCountBadge(model: tabCountModel))
+            return ImageSegmentedPickerItem(text: nil,
+                                            selectedCustomView: itemView,
+                                            unselectedCustomView: itemView)
+            
         case .fire:
             return ImageSegmentedPickerItem(
-                text: "",
-                selectedImage: Image(uiImage: DesignSystemImages.Color.Size16.fire),
-                unselectedImage: Image(uiImage: DesignSystemImages.Glyphs.Size16.fire))
+                text: nil,
+                selectedImage: Image(uiImage: DesignSystemImages.Glyphs.Size24.fireTabs),
+                unselectedImage: Image(uiImage: DesignSystemImages.Glyphs.Size24.fireTabs))
         }
     }
 }

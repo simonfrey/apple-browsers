@@ -88,6 +88,10 @@ class TabManager: TabManaging, TrackerAnimationSuppressing {
         }
     }
     
+    var normalTabsModel: TabsModelManaging {
+        tabsModelProvider.normalTabsModel
+    }
+    
     var allTabsModel: TabsModelReading {
         tabsModelProvider.aggregateTabsModel
     }
@@ -207,14 +211,7 @@ class TabManager: TabManaging, TrackerAnimationSuppressing {
     func setWebExtensionManager(_ manager: WebExtensionManaging?) {
         self.webExtensionManager = manager
     }
-
-    func tabsModel(for mode: BrowsingMode) -> TabsModelManaging {
-        switch mode {
-        case .fire: return tabsModelProvider.fireModeTabsModel
-        case .normal: return tabsModelProvider.normalTabsModel
-        }
-    }
-
+    
     @MainActor
     func setBrowsingMode(_ mode: BrowsingMode) {
         guard mode != currentBrowsingMode else {
@@ -222,6 +219,13 @@ class TabManager: TabManaging, TrackerAnimationSuppressing {
         }
         _currentBrowsingMode = mode
         // TODO: - Fire pixel
+    }
+
+    func tabsModel(for mode: BrowsingMode) -> TabsModelManaging {
+        switch mode {
+        case .fire: return tabsModelProvider.fireModeTabsModel
+        case .normal: return tabsModelProvider.normalTabsModel
+        }
     }
 
     @MainActor
@@ -387,7 +391,7 @@ class TabManager: TabManaging, TrackerAnimationSuppressing {
                                                               darkReaderFeatureSettings: darkReaderFeatureSettings)
         controller.attachWebView(configuration: configCopy,
                                  andLoadRequest: request,
-                                 consumeCookies: !model.hasActiveTabs,
+                                 consumeCookies: !currentTabsModel.hasActiveTabs,
                                  loadingInitiatedByParentTab: true)
         controller.delegate = delegate
         controller.loadViewIfNeeded()
