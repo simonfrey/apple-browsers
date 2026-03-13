@@ -3169,6 +3169,11 @@ extension MainViewController: OmniBarDelegate {
             verticalSizeClass: traitCollection.verticalSizeClass
         )
 
+        let initialDetentHeight = model.estimatedInitialDetentHeight(
+            headerDataSource: browsingMenuHeaderDataSource,
+            verticalSizeClass: traitCollection.verticalSizeClass
+        )
+
         func configureSheetPresentationController(_ sheet: UISheetPresentationController) {
             if context == .newTabPage {
                 if #available(iOS 16.0, *) {
@@ -3176,6 +3181,8 @@ extension MainViewController: OmniBarDelegate {
                 } else {
                     sheet.detents = [.medium()]
                 }
+            } else if let initialDetentHeight, #available(iOS 16.0, *) {
+                sheet.detents = [.custom { _ in initialDetentHeight }, .large()]
             } else {
                 sheet.detents = [.medium(), .large()]
             }
