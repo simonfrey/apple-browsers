@@ -293,6 +293,10 @@ public enum FeatureFlag: String, CaseIterable {
     /// Enables the promo service to coordinate promos/calls to action
     /// https://app.asana.com/1/137249556945/project/1211834678943996/task/1213431687119179?focus=true
     case promoQueue
+
+    /// Enables the new Tab Animations (Milestone 1)
+    /// https://app.asana.com/1/137249556945/project/1211834678943996/task/1213643457004332
+    case tabAnimations
 }
 
 extension FeatureFlag: FeatureFlagDescribing {
@@ -325,7 +329,8 @@ extension FeatureFlag: FeatureFlagDescribing {
                 .nextStepsListWidget,
                 .webViewLookUpAction,
                 .startupMetrics,
-                .promoQueue:
+                .promoQueue,
+                .tabAnimations:
             true
         default:
             false
@@ -421,7 +426,8 @@ extension FeatureFlag: FeatureFlagDescribing {
                 .aiChatChromeSidebar,
                 .webViewLookUpAction,
                 .promoQueue,
-                .semaphoreAlwaysVisible:
+                .semaphoreAlwaysVisible,
+                .tabAnimations:
             return true
         case .freemiumDBP,
                 .contextualOnboarding,
@@ -605,6 +611,8 @@ extension FeatureFlag: FeatureFlagDescribing {
             return .internalOnly()
         case .promoQueue:
             return .remoteReleasable(.feature(.promoQueue))
+        case .tabAnimations:
+            return .internalOnly()
         }
     }
 }
