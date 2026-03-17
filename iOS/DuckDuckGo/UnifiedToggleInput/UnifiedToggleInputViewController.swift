@@ -113,6 +113,13 @@ final class UnifiedToggleInputViewController: UIViewController {
         set { inputBarView.isToolbarSubmitHidden = newValue }
     }
 
+    var isGenerating: Bool = false {
+        didSet {
+            handler.isGenerating = isGenerating
+            inputBarView.isGenerating = isGenerating
+        }
+    }
+
     func apply(_ config: UTIViewConfig, animated: Bool) {
         cardPosition = config.cardPosition
         usesOmnibarMargins = config.usesOmnibarMargins
