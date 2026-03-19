@@ -439,6 +439,7 @@ class MainViewController: UIViewController {
         
         tabManager.delegate = self
         tabManager.aiChatContentDelegate = self
+        tabManager.fireModeDelegate = self
         self.fireExecutor.delegate = self
         bindSyncService()
     }
@@ -4189,7 +4190,13 @@ extension MainViewController: TabSwitcherDelegate {
 
     func tabSwitcherDidRequestCloseAll(tabSwitcher: TabSwitcherViewController) {
         Task {
-            let request = FireRequest(options: .tabs, trigger: .manualFire, scope: .all, source: .tabSwitcher)
+            let request: FireRequest
+            switch tabSwitcher.selectedBrowsingMode {
+            case .fire:
+                request = FireRequest(options: .all, trigger: .manualFire, scope: .fireMode, source: .tabSwitcher)
+            case .normal:
+                request = FireRequest(options: .tabs, trigger: .manualFire, scope: .normalMode, source: .tabSwitcher)
+            }
             await fireExecutor.burn(request: request, applicationState: .unknown)
             tabSwitcher.dismissIfPossible()
         }
@@ -4340,6 +4347,8 @@ extension MainViewController {
             return 1
         case .fireMode:
             return tabManager.tabsModel(for: .fire).count
+        case .normalMode:
+            return tabManager.tabsModel(for: .normal).count
         case .all:
             return tabManager.allTabsModel.count
         }
@@ -4456,6 +4465,19 @@ extension MainViewController {
     }
 }
 
+extension MainViewController: TabManagerFireModeDelegate {
+
+    func tabManagerDidCloseLastFireTab() {
+        Task {
+            let request = FireRequest(options: [.data, .aiChats],
+                                      trigger: .fireModeAutoClear,
+                                      scope: .fireMode,
+                                      source: .browsing)
+            await fireExecutor.burn(request: request, applicationState: .unknown)
+        }
+    }
+}
+
 extension MainViewController: FireExecutorDelegate {
     
     func willStartBurning(fireRequest: FireRequest) {
@@ -4467,6 +4489,8 @@ extension MainViewController: FireExecutorDelegate {
         case .autoClearOnForeground:
             autoClearInProgress = true
             clearNavigationStack()
+        case .fireModeAutoClear:
+            break
         }
     }
     
@@ -4483,7 +4507,7 @@ extension MainViewController: FireExecutorDelegate {
             DailyPixel.fire(pixel: .forgetAllExecutedDaily, withAdditionalParameters: params)
         case .tab:
             DailyPixel.fireDailyAndCount(pixel: .singleTabBurnExecuted, withAdditionalParameters: params)
-        case .fireMode:
+        case .fireMode, .normalMode:
             // TODO: - Add fire mode burn pixel
             break
         }
@@ -4500,6 +4524,8 @@ extension MainViewController: FireExecutorDelegate {
                 tabs = tabManager.allTabsModel.tabs
             case .fireMode:
                 tabs = tabManager.tabsModel(for: .fire).tabs
+            case .normalMode:
+                tabs = tabManager.tabsModel(for: .normal).tabs
             case .tab:
                 tabs = []
             }
@@ -4515,7 +4541,7 @@ extension MainViewController: FireExecutorDelegate {
         guard fireRequest.trigger == .manualFire else { return }
                 
         switch fireRequest.scope {
-        case .all, .fireMode:
+        case .all, .fireMode, .normalMode:
             refreshUIAfterClear()
         case .tab:
             // For single tab, the UI was already updated in closeTab() → updateCurrentTab()
@@ -4547,7 +4573,7 @@ extension MainViewController: FireExecutorDelegate {
             Task {
                 await aiChatViewControllerManager.killSessionAndResetTimer()
             }
-        case .fireMode:
+        case .fireMode, .normalMode:
             // TODO: - Custom fire mode logic
             return
         case .tab:
@@ -4581,6 +4607,8 @@ extension MainViewController: FireExecutorDelegate {
                 refreshUIAfterClear()
             }
             autoClearShouldRefreshUIAfterClear = true
+        case .fireModeAutoClear:
+            break
         }
     }
 }
