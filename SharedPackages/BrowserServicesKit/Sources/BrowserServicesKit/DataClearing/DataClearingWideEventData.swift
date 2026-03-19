@@ -277,6 +277,7 @@ extension DataClearingWideEventData {
     public enum Scope: String, Codable, CaseIterable {
         case tab
         case all
+        case fireMode
     }
 
     /// Entry point that triggered the data clearing flow (iOS only).

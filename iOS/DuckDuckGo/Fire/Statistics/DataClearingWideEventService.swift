@@ -191,6 +191,8 @@ private extension FireRequest {
             return .tab
         case .all:
             return .all
+        case .fireMode:
+            return .fireMode
         }
     }
 

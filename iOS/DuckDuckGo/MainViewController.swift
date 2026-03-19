@@ -1486,6 +1486,7 @@ class MainViewController: UIViewController {
                 tabViewModel: tabManager.viewModelForCurrentTab(),
                 pixelSource: .browsing,
                 daxDialogsManager: daxDialogsManager,
+                browsingMode: tabManager.currentBrowsingMode,
                 onConfirm: { [weak self] fireRequest in
                     self?.forgetAllWithAnimation(request: fireRequest) {}
                 },
@@ -4300,7 +4301,7 @@ extension MainViewController {
                                 transitionCompletion: (() -> Void)? = nil,
                                 showNextDaxDialog: Bool = false) {
         let spid = Instruments.shared.startTimedEvent(.clearingData)
-        let tabsCount = tabManager.currentTabsModel.count // TODO: - Customize based on browsing mode
+        let tabsCount = tabsCount(for: request.scope)
         firePixels(for: request)
         productSurfaceTelemetry.dataClearingUsed()
         
@@ -4311,7 +4312,7 @@ extension MainViewController {
             Instruments.shared.endTimedEvent(for: spid)
             self.daxDialogsManager.resumeRegularFlow()
         } onTransitionCompleted: { [weak self] in
-            self?.presentPostBurnMessage(scope: request.scope, tabsCount: tabsCount)
+            self?.presentPostBurnMessage(tabsCount: tabsCount)
             transitionCompletion?()
         } completion: {
             self.subscriptionDataReporter.saveFireCount()
@@ -4333,21 +4334,30 @@ extension MainViewController {
         }
     }
     
-    @MainActor
-    private func presentPostBurnMessage(scope: FireRequest.Scope, tabsCount: Int) {
-        let message: String
+    private func tabsCount(for scope: FireRequest.Scope) -> Int {
         switch scope {
-        case .all:
-            message = UserText.scopedFireConfirmationTabsDeletedToast(tabCount: tabsCount)
-            
         case .tab:
-            message = UserText.scopedFireConfirmationTabsDeletedToast(tabCount: 1)
+            return 1
+        case .fireMode:
+            return tabManager.tabsModel(for: .fire).count
+        case .all:
+            return tabManager.allTabsModel.count
         }
+    }
+    
+    @MainActor
+    private func presentPostBurnMessage(tabsCount: Int) {
+        let message = UserText.scopedFireConfirmationTabsDeletedToast(tabCount: tabsCount)
         ActionMessageView.present(message: message,
                                   presentationLocation: .withBottomBar(andAddressBarBottom: self.appSettings.currentAddressBarPosition.isBottom))
     }
     
     private func refreshUIAfterClear() {
+        if tabManager.currentTabsModel.tabs.isEmpty && tabManager.currentTabsModel.allowsEmpty {
+            showTabSwitcher()
+            tabSwitcherController?.updateUIForSelectionMode()
+            return
+        }
         showBars()
         attachHomeScreen()
         tabsBarController?.refresh(tabsModel: tabManager.currentTabsModel)
@@ -4473,6 +4483,9 @@ extension MainViewController: FireExecutorDelegate {
             DailyPixel.fire(pixel: .forgetAllExecutedDaily, withAdditionalParameters: params)
         case .tab:
             DailyPixel.fireDailyAndCount(pixel: .singleTabBurnExecuted, withAdditionalParameters: params)
+        case .fireMode:
+            // TODO: - Add fire mode burn pixel
+            break
         }
     }
     
@@ -4481,15 +4494,19 @@ extension MainViewController: FireExecutorDelegate {
         findInPageView?.done()
 
         if #available(iOS 18.4, *) {
+            let tabs: [Tab]
             switch fireRequest.scope {
             case .all:
-                for tab in tabManager.allTabsModel.tabs {
-                    if let tabController = tabManager.controller(for: tab) {
-                        webExtensionEventsCoordinator?.didCloseTab(tabController)
-                    }
-                }
+                tabs = tabManager.allTabsModel.tabs
+            case .fireMode:
+                tabs = tabManager.tabsModel(for: .fire).tabs
             case .tab:
-                break
+                tabs = []
+            }
+            for tab in tabs {
+                if let tabController = tabManager.controller(for: tab) {
+                    webExtensionEventsCoordinator?.didCloseTab(tabController)
+                }
             }
         }
     }
@@ -4498,7 +4515,7 @@ extension MainViewController: FireExecutorDelegate {
         guard fireRequest.trigger == .manualFire else { return }
                 
         switch fireRequest.scope {
-        case .all:
+        case .all, .fireMode:
             refreshUIAfterClear()
         case .tab:
             // For single tab, the UI was already updated in closeTab() → updateCurrentTab()
@@ -4530,6 +4547,9 @@ extension MainViewController: FireExecutorDelegate {
             Task {
                 await aiChatViewControllerManager.killSessionAndResetTimer()
             }
+        case .fireMode:
+            // TODO: - Custom fire mode logic
+            return
         case .tab:
             // No custom logic for tab scope
             return
