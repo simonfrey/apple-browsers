@@ -293,6 +293,9 @@ public enum FeatureFlag: String, CaseIterable {
     /// https://app.asana.com/1/137249556945/project/1211834678943996/task/1213431687119179?focus=true
     case promoQueue
 
+    /// Enables showing browsing history domains in the first-time quit survey
+    case websitesHistoryFirstTimeQuitSurvey
+
     /// Enables the new Tab Animations (Milestone 1)
     /// https://app.asana.com/1/137249556945/project/1211834678943996/task/1213643457004332
     case tabAnimations
@@ -331,7 +334,8 @@ extension FeatureFlag: FeatureFlagDescribing {
                 .nextStepsListWidget,
                 .webViewLookUpAction,
                 .startupMetrics,
-                .promoQueue:
+                .promoQueue,
+                .websitesHistoryFirstTimeQuitSurvey:
             .enabled
         case .autofillPasswordsStatusBar,
              .aiChatSidebarFloating,
@@ -434,6 +438,7 @@ extension FeatureFlag: FeatureFlagDescribing {
                 .webViewLookUpAction,
                 .promoQueue,
                 .semaphoreAlwaysVisible,
+                .websitesHistoryFirstTimeQuitSurvey,
                 .tabAnimations,
                 .addToDockAppStore:
             return true
@@ -619,6 +624,8 @@ extension FeatureFlag: FeatureFlagDescribing {
             return .remoteReleasable(.subfeature(MacOSBrowserConfigSubfeature.semaphoreAlwaysVisible))
         case .promoQueue:
             return .remoteReleasable(.feature(.promoQueue))
+        case .websitesHistoryFirstTimeQuitSurvey:
+            return .remoteReleasable(.subfeature(MacOSBrowserConfigSubfeature.websitesHistoryFirstTimeQuitSurvey))
         case .tabAnimations:
             return .remoteReleasable(.subfeature(MacOSBrowserConfigSubfeature.tabAnimations))
         case .addToDockAppStore:
