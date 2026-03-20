@@ -300,6 +300,10 @@ public enum FeatureFlag: String, CaseIterable {
     /// Enables the new Tab Animations (Milestone 1)
     /// https://app.asana.com/1/137249556945/project/1211834678943996/task/1213643457004332
     case tabAnimations
+
+    /// Enables the "Add to dock" onboarding step and setting for App Store builds
+    /// https://app.asana.com/1/137249556945/project/1211834678943996/task/1213725466401987?focus=true
+    case addToDockAppStore
 }
 
 extension FeatureFlag: FeatureFlagDescribing {
@@ -336,7 +340,8 @@ extension FeatureFlag: FeatureFlagDescribing {
         case .autofillPasswordsStatusBar,
              .aiChatSidebarFloating,
              .semaphoreAlwaysVisible,
-             .tabAnimations:
+             .tabAnimations,
+             .addToDockAppStore:
             .internalOnly
         default:
             .disabled
@@ -434,7 +439,8 @@ extension FeatureFlag: FeatureFlagDescribing {
                 .webViewLookUpAction,
                 .promoQueue,
                 .semaphoreAlwaysVisible,
-                .tabAnimations:
+                .tabAnimations,
+                .addToDockAppStore:
             return true
         case .freemiumDBP,
                 .contextualOnboarding,
@@ -622,6 +628,8 @@ extension FeatureFlag: FeatureFlagDescribing {
             return .remoteReleasable(.feature(.promoQueue))
         case .tabAnimations:
             return .remoteReleasable(.subfeature(MacOSBrowserConfigSubfeature.tabAnimations))
+        case .addToDockAppStore:
+            return .remoteReleasable(.subfeature(MacOSBrowserConfigSubfeature.addToDockAppStore))
         }
     }
 }
