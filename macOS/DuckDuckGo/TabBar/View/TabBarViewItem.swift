@@ -154,6 +154,10 @@ final class TabBarItemCellView: NSView {
     let themeManager: ThemeManaging = NSApp.delegateTyped.themeManager
     var themeUpdateCancellable: AnyCancellable?
 
+    private let featureFlagger: FeatureFlagger = NSApp.delegateTyped.featureFlagger
+    private let displaysTabsAnimations: Bool = NSApp.delegateTyped.displaysTabsAnimations
+
+    fileprivate lazy var backgroundView = TabBackgroundView()
     fileprivate lazy var faviconView = TabFaviconView()
     fileprivate lazy var titleView = TabTitleView()
 
@@ -222,6 +226,7 @@ final class TabBarItemCellView: NSView {
         return mouseOverView
     }()
 
+    /// Deprecated: Replaced by `TabBackgroundView`
     fileprivate let roundedBackgroundColorView = {
         let view = ColorView(frame: .zero)
         view.alphaValue = 0.8
@@ -230,12 +235,14 @@ final class TabBarItemCellView: NSView {
 
     fileprivate let rightSeparatorView = ColorView(frame: .zero)
 
+    /// Deprecated: Replaced by `TabBackgroundView`
     fileprivate lazy var rightRampView: RampView = {
         let view = RampView()
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
 
+    /// Deprecated: Replaced by `TabBackgroundView`
     fileprivate lazy var leftRampView: RampView = {
         let view = RampView()
         view.isFlippedHorizontally = true
@@ -294,7 +301,9 @@ final class TabBarItemCellView: NSView {
             .layerMaxXMaxYCorner
         ]
 
-        if theme.tabStyleProvider.shouldShowSShapedTab {
+        if displaysTabsAnimations {
+            addSubview(backgroundView)
+        } else if theme.tabStyleProvider.shouldShowSShapedTab {
             addSubview(leftRampView)
             addSubview(rightRampView)
         } else {
@@ -302,7 +311,7 @@ final class TabBarItemCellView: NSView {
         }
 
         addSubview(mouseOverView)
-        if theme.tabStyleProvider.isRoundedBackgroundPresentOnHover {
+        if !displaysTabsAnimations, theme.tabStyleProvider.isRoundedBackgroundPresentOnHover {
             roundedBackgroundColorView.cornerRadius = 6
             addSubview(roundedBackgroundColorView)
         }
@@ -365,7 +374,18 @@ final class TabBarItemCellView: NSView {
                                                       height: height)
         }
 
-        if theme.tabStyleProvider.shouldShowSShapedTab {
+        if displaysTabsAnimations, backgroundView.frame != bounds {
+            withoutAnimation {
+                backgroundView.frame = bounds
+            }
+
+            withoutAnimation {
+                leftPixelMask.frame = CGRect(x: 0, y: 0, width: TabShadowConfig.dividerSize, height: TabShadowConfig.dividerSize)
+                rightPixelMask.frame = CGRect(x: bounds.width - TabShadowConfig.dividerSize, y: 0, width: TabShadowConfig.dividerSize, height: TabShadowConfig.dividerSize)
+                topContentLineMask.frame = CGRect(x: 0, y: TabShadowConfig.dividerSize, width: bounds.width, height: bounds.height - TabShadowConfig.dividerSize)
+            }
+
+        } else if theme.tabStyleProvider.shouldShowSShapedTab {
             withoutAnimation {
                 rightRampView.frame = CGRect(x: bounds.width, y: 0, width: RampView.Consts.rampWidth, height: RampView.Consts.rampHeight)
                 leftRampView.frame = CGRect(x: -RampView.Consts.rampWidth, y: 0, width: RampView.Consts.rampWidth, height: RampView.Consts.rampHeight)
@@ -542,10 +562,15 @@ extension TabBarItemCellView: ThemeUpdateListening {
         let tabStyleProvider = theme.tabStyleProvider
         let colorsProvider = theme.colorsProvider
 
-        leftRampView.rampColor = colorsProvider.navigationBackgroundColor
-        rightRampView.rampColor = colorsProvider.navigationBackgroundColor
+        if displaysTabsAnimations {
+            backgroundView.backgroundColor = colorsProvider.navigationBackgroundColor
+            backgroundView.overlayColor = tabStyleProvider.hoverTabColor
+        } else {
+            leftRampView.rampColor = colorsProvider.navigationBackgroundColor
+            rightRampView.rampColor = colorsProvider.navigationBackgroundColor
+            mouseOverView.mouseOverColor = tabStyleProvider.hoverTabColor
+        }
 
-        mouseOverView.mouseOverColor = tabStyleProvider.hoverTabColor
         rightSeparatorView.backgroundColor = tabStyleProvider.separatorColor
     }
 }
@@ -703,6 +728,8 @@ final class TabBarViewItem: NSCollectionViewItem {
     private var activePermissionTypes: [PermissionType] = []
     private var currentActivePermissionIndex = 0
 
+    private let displaysTabsAnimations: Bool = NSApp.delegateTyped.displaysTabsAnimations
+
     let themeManager: ThemeManaging = NSApp.delegateTyped.themeManager
     var themeUpdateCancellable: AnyCancellable?
 
@@ -797,6 +824,8 @@ final class TabBarViewItem: NSCollectionViewItem {
             }
 
             updateSubviews()
+
+            cell.backgroundView.refreshStateIfNeeded(isSelected: isSelected, isDragged: isDragged, isMouseOver: isMouseOver)
             updateUsedPermissions()
         }
     }
@@ -1005,8 +1034,18 @@ final class TabBarViewItem: NSCollectionViewItem {
     }
 
     private func updateSubviews() {
+        /// Ensure  `updateSubviews` does not trigger any unexpected animations
+        CATransaction.begin()
+        defer {
+            CATransaction.commit()
+        }
+
         withoutAnimation {
-            if isSelected || isDragged {
+            if displaysTabsAnimations {
+                cell.mouseOverView.backgroundColor = nil
+                cell.mouseOverView.mouseOverColor = nil
+
+            } else if isSelected || isDragged {
                 cell.mouseOverView.mouseOverColor = nil
                 cell.mouseOverView.backgroundColor = theme.colorsProvider.navigationBackgroundColor
                 cell.roundedBackgroundColorView.isHidden = true
@@ -1023,11 +1062,13 @@ final class TabBarViewItem: NSCollectionViewItem {
 
             }
 
-            if theme.tabStyleProvider.shouldShowSShapedTab {
-                cell.rightRampView.isHidden = !(isSelected || isDragged)
-                cell.leftRampView.isHidden = !(isSelected || isDragged)
-            } else {
-                cell.borderLayer.isHidden = !isSelected
+            if !displaysTabsAnimations {
+                if theme.tabStyleProvider.shouldShowSShapedTab {
+                    cell.rightRampView.isHidden = !(isSelected || isDragged)
+                    cell.leftRampView.isHidden = !(isSelected || isDragged)
+                } else {
+                    cell.borderLayer.isHidden = !isSelected
+                }
             }
         }
 
@@ -1454,6 +1495,9 @@ extension TabBarViewItem: MouseClickViewDelegate {
     func mouseOverView(_ mouseOverView: MouseOverView, isMouseOver: Bool) {
         delegate?.tabBarViewItem(self, isMouseOver: isMouseOver)
         self.isMouseOver = isMouseOver
+
+        cell.backgroundView.refreshStateIfNeeded(isSelected: isSelected, isDragged: isDragged, isMouseOver: isMouseOver)
+
         view.needsLayout = true
         eventMonitor = isMouseOver ? NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             if let self, widthStage.isCloseButtonHidden {
