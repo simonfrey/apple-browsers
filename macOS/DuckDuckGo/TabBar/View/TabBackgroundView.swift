@@ -36,10 +36,10 @@ final class TabBackgroundView: NSView {
     }
 
     private enum Metrics {
-        static let overlayCornerRadius: CGFloat = 6
+        static let overlayCornerRadius: CGFloat = 8
         static let overlayInsets: NSEdgeInsets = NSEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
-        static let shapeCornerRadius: CGFloat = 8
-        static let shapeRampSize = NSSize(width: 10, height: 10)
+        static let tabCornerRadius: CGFloat = 12
+        static let tabRampSize = NSSize(width: 12, height: 12)
     }
 
     // MARK: - Subviews
@@ -103,8 +103,8 @@ private extension TabBackgroundView {
 
         backgroundShapeView.wantsLayer = true
         backgroundShapeView.clipsToBounds = false
-        backgroundShapeView.rampSize = Metrics.shapeRampSize
-        backgroundShapeView.tabCornerRadius = Metrics.shapeCornerRadius
+        backgroundShapeView.tabRampSize = Metrics.tabRampSize
+        backgroundShapeView.tabCornerRadius = Metrics.tabCornerRadius
 
         overlayView.cornerRadius = Metrics.overlayCornerRadius
 
