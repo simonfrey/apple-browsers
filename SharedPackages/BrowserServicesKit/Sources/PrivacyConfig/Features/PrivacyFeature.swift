@@ -188,6 +188,9 @@ public enum MacOSBrowserConfigSubfeature: String, PrivacySubfeature {
 
     case tabAnimations
 
+    /// Enables lazy reload for the more options menu
+    case lazyMenuRebuild
+
     case addToDockAppStore
 }
 
