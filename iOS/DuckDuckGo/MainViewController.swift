@@ -3367,6 +3367,20 @@ extension MainViewController: OmniBarDelegate {
         }
     }
 
+    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        if motion == .motionShake, featureFlagger.internalUserDecider.isInternalUser || isDebugBuild {
+            var topVC: UIViewController = self
+            while let presented = topVC.presentedViewController {
+                topVC = presented
+            }
+            if !(topVC is DebugScreensViewController),
+               !((topVC as? UINavigationController)?.viewControllers.first is DebugScreensViewController) {
+                segueToDebugSettings()
+            }
+        }
+        super.motionEnded(motion, with: event)
+    }
+
     func performCancel() {
         dismissOmniBar()
         omniBar.cancel()
