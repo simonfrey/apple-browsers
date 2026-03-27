@@ -843,7 +843,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dockPreferences = DockPreferencesModel(
             featureFlagger: featureFlagger,
             dockCustomizer: dockCustomization,
-            windowControllersManager: windowControllersManager,
             pixelFiring: PixelKit.shared
         )
         accessibilityPreferences = AccessibilityPreferences()
