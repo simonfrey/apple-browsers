@@ -305,6 +305,7 @@ public enum DBPSubfeature: String, Equatable, PrivacySubfeature {
     case foregroundRunningOnAppActive
     case foregroundRunningWhenDashboardOpen
     case clickActionDelayReductionOptimization
+    case continuedProcessing
     case pirRollout
     case goToMarket
     case webViewUserAgent
