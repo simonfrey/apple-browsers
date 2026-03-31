@@ -1,8 +1,8 @@
 //
-//  AIChatIntent.swift
+//  AIVoiceChatIntent.swift
 //  DuckDuckGo
 //
-//  Copyright © 2025 DuckDuckGo. All rights reserved.
+//  Copyright © 2026 DuckDuckGo. All rights reserved.
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -22,21 +22,21 @@ import AppIntents
 import Core
 
 @available(iOS 17.0, *)
-struct AIChatIntent: AppIntent {
-    static var title: LocalizedStringResource = "Chat with Duck.ai in DuckDuckGo"
-    static let description: LocalizedStringResource = "Open a private chat with Duck.ai"
+struct AIVoiceChatIntent: AppIntent {
+    static var title: LocalizedStringResource = "Start a voice chat with Duck.ai in DuckDuckGo"
+    static let description: LocalizedStringResource = "Start a private voice chat with Duck.ai"
     static let openAppWhenRun: Bool = true
     static let isDiscoverable: Bool = true
     static var authenticationPolicy: IntentAuthenticationPolicy = .alwaysAllowed
 
     public static var parameterSummary: some ParameterSummary {
-        Summary("Open a private chat with Duck.ai")
+        Summary("Start a private voice chat with Duck.ai")
     }
-    
+
     @MainActor
     public func perform() async throws -> some IntentResult & OpensIntent {
-        Pixel.fire(pixel: .appIntentPerformed, withAdditionalParameters: ["type": "duckai"])
-        await UIApplication.shared.open(AppDeepLinkSchemes.openAIChat.url)
+        Pixel.fire(pixel: .appIntentPerformed, withAdditionalParameters: ["type": "duckai_voice"])
+        await UIApplication.shared.open(AppDeepLinkSchemes.openAIVoiceChat.url.appendingParameter(name: "source", value: VoiceEntryPointSource.siri.rawValue))
         return .result()
     }
 }
